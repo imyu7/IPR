@@ -7,7 +7,7 @@ from eval_agent.envs import BaseEnv
 from eval_agent.tasks import WebShopTask
 from eval_agent.prompt import prompt_with_icl
 from eval_agent.utils.datatypes import State
-from webshop.web_agent_site.envs import WebAgentTextEnv
+from envs.webshop.src.webshop.web_agent_site.envs.web_agent_text_env import WebAgentTextEnv
 
 
 logger = logging.getLogger("agent_frame")
@@ -91,12 +91,17 @@ class WebShopEnv(BaseEnv):
         self.state = State()
         self.env.reset(self.session_id)
         cur_task = self.env.observation
-        observation, messages = prompt_with_icl(self.instruction, self.raw_icl, cur_task, 0)
+        # print('[DEBUG] cur_task: ', cur_task)
+        print('[DEBUG] instruction: ', self.instruction)
+        observation, messages = prompt_with_icl(self.instruction, self.raw_icl, cur_task, 5)
+        # print('[DEBUG] reset observation: ', observation)
+        # print('[DEBUG] reset messages: ', messages)
         if self.icl_format == 'first':
             self.state.history.append({
                 "role": "user",
                 "content": observation,
             })
-        elif self.icl_format == 'conversation':
-            self.state.history = messages
+        # elif self.icl_format == 'conversation':
+        #     self.state.history = messages
+        # print('[DEBUG] reset state history: ', self.state.history)
         return observation, self.state

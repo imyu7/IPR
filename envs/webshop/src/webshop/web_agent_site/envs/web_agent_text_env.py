@@ -32,11 +32,12 @@ from ..utils import (
 )
 
 app = Flask(__name__)
+
 class WebAgentTextEnv(gym.Env):
     """Gym environment for Text mode of WebShop environment"""
     def __init__(
             self,
-            observation_mode='html',
+            observation_mode='text',
             file_path=DEFAULT_FILE_PATH,
             server=None,
             **kwargs
@@ -55,7 +56,7 @@ class WebAgentTextEnv(gym.Env):
         session_prefix
         show_attrs
         """
-        super(WebAgentTextEnv, self).__init__()
+        super().__init__()
         self.observation_mode = observation_mode
         self.kwargs = kwargs
 
@@ -374,64 +375,28 @@ class SimServer:
         url = f'{self.base_url}/{session_id}'
         return html, url
     
-    # @app.route('/', methods=['GET', 'POST'])
-    # def search_results(self, session_id, **kwargs):
-        """Initialize session and return the search results page"""
-        session = self.user_sessions[session_id]
-        keywords = kwargs['keywords']  # TODO: why is this using kwargs? why not session?
-        assert isinstance(keywords, list)
-        page = 1 if 'page' not in kwargs else kwargs['page']
-        session["page"] = page
-        session["keywords"] = keywords
-        session["actions"]["search"] += 1
-        session["asin"] = None
-        session["options"] = {}
-
-        # Perform search on keywords from items and record amount of time it takes
-        old_time = time.time()
-        top_n_products = get_top_n_product_from_keywords(
-            keywords,
-            self.search_engine,
-            self.all_products,
-            self.product_item_dict,
-        )
-        self.search_time += time.time() - old_time
-        
-        # Get product list from search result asins and get list of corresponding URLs
-        products = get_product_per_page(top_n_products, page)
-
-        keywords_url_string = '+'.join(keywords)
-        url = (
-            f'{self.base_url}/search_results/{session_id}/'
-            f'{keywords_url_string}/{page}'
-        )
-
-        # Render HTML search page and record amount of time taken
-        old_time = time.time()
-        html = map_action_to_html(
-            'search',
-            session_id=session_id,
-            products=products,
-            keywords=session["keywords"],
-            page=page,
-            total=len(top_n_products),
-            instruction_text=session["goal"]["instruction_text"],
-        )
-        self.render_time += time.time() - old_time
-        return html, url
     
     @app.route('/', methods=['GET', 'POST'])
     def search_results(self, session_id, **kwargs):
-        """Initialize session and return the search results page"""
+        """Initialize session and return the search results page (with print statements)"""
+        # メソッドの入口ログ
+        # print(f"[search_results] Called with session_id={session_id}, kwargs={kwargs}")
+
         session = self.user_sessions[session_id]
         keywords = kwargs['keywords']  # TODO: why is this using kwargs? why not session?
-        assert isinstance(keywords, list)
+        # print(f"[search_results] Extracted keywords={keywords} (type={type(keywords)})")
+
+        # 万が一、文字列で飛んできた場合の確認
+        assert isinstance(keywords, list), f"Expected keywords to be a list, but got {type(keywords)}"
+
         page = 1 if 'page' not in kwargs else kwargs['page']
         session["page"] = page
         session["keywords"] = keywords
         session["actions"]["search"] += 1
         session["asin"] = None
         session["options"] = {}
+
+        # print(f"[search_results] Session page={page}, actions.search={session['actions']['search']}")
 
         # Perform search on keywords from items and record amount of time it takes
         old_time = time.time()
@@ -441,42 +406,52 @@ class SimServer:
             self.all_products,
             self.product_item_dict,
         )
-        
-        self.search_time += time.time() - old_time
-        
+        elapsed_search = time.time() - old_time
+        self.search_time += elapsed_search
+        # print(f"[search_results] Retrieved {len(top_n_products)} products in {elapsed_search:.4f} sec.")
+
         # Get product list from search result asins and get list of corresponding URLs
         
         products = get_product_per_page(top_n_products, page)
+        # print(f"[search_results] Showing {len(products)} products on page {page}")
 
         # calculate search reward
         goal = self.user_sessions[session_id]['goal']
         search_max = 0.0
-        maxr = False # whether contain goal item in search page
-        for i in range(len(products)):
+        maxr = False  # whether contain goal item in search page
+
+        # デバッグ用に、各商品の報酬計算を可視化する
+        for i, single_product in enumerate(products):
             product_r = []
-            single_product = products[i]
             all_options = list(single_product['options'].values())
             # generate all possible combinations of options
             all_combinations = list(itertools.product(*all_options))
+
             if len(all_combinations) > 0:
                 for c in all_combinations:
                     price = single_product['pricing'][0]
                     reward, _ = get_reward(single_product, goal, price, dict(enumerate(c)), verbose=True)
                     product_r.append(reward)
-                    if reward==1.0:
-                        maxr=True
-                if sum(product_r)/len(product_r) > search_max:
-                    search_max = sum(product_r)/len(product_r)
+                    if reward == 1.0:
+                        maxr = True
+                avg_reward = sum(product_r) / len(product_r)
+                if avg_reward > search_max:
+                    search_max = avg_reward
+                # print(f"[search_results] Product index={i}, average reward={avg_reward}")
             else:
+                # オプションがない商品
                 price = single_product['pricing'].values()
                 reward, _ = get_reward(single_product, goal, price, dict(), verbose=True)
-                if reward ==1.0:
-                    maxr=True
+                if reward == 1.0:
+                    maxr = True
                 if reward > search_max:
                     search_max = reward
+                # print(f"[search_results] Product index={i}, single reward={reward}")
+
         self.sub_reward.append(search_max)
         self.reward = search_max
-             
+        # print(f"[search_results] Computed search_max={search_max}, maxr={maxr}")
+
         keywords_url_string = '+'.join(keywords)
         url = (
             f'{self.base_url}/search_results/{session_id}/'
@@ -494,7 +469,12 @@ class SimServer:
             total=len(top_n_products),
             instruction_text=session["goal"]["instruction_text"],
         )
-        self.render_time += time.time() - old_time
+        elapsed_render = time.time() - old_time
+        self.render_time += elapsed_render
+
+        # print(f"[search_results] Rendered search page in {elapsed_render:.4f} sec.")
+        # print(f"[search_results] Returning html (len={len(html)}) and url={url}")
+
         return html, url
     
     @app.route('/', methods=['GET', 'POST'])

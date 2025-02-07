@@ -17,9 +17,9 @@ class BaseEnv(ABC):
         with open(instruction_path) as f:
             self.instruction = f.read()
         self.raw_icl = json.load(open(icl_path))
+        # print('[DEBUG] raw_icl: ', self.raw_icl) # 正しくwebshop_icl.jsonが読み込めている
         self.icl_format = icl_format
         self.max_steps = max_steps
-
 
     @abstractmethod
     def step(self, llm_output: str) -> Tuple[str, State]:

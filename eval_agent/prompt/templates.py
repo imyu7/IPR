@@ -15,7 +15,7 @@ Now, it's your turn and here is the task.
 
 
 
-def prompt_with_icl(instruction, raw_icl, cur_task, icl_num=2):
+def prompt_with_icl(instruction, raw_icl, cur_task, icl_num=5):
     examples = ""
     messages = [{
         "role": "user",
