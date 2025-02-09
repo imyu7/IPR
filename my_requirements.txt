@@ -1,0 +1,14 @@
+spacy
+clean-text
+rank-bm25
+flask
+pyserini
+unidecode
+gdown
+gym
+selenium
+thefuzz
+textworld
+openai
+python-dotenv
+backoff

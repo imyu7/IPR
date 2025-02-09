@@ -92,7 +92,7 @@ class WebShopEnv(BaseEnv):
         self.env.reset(self.session_id)
         cur_task = self.env.observation
         # print('[DEBUG] cur_task: ', cur_task)
-        print('[DEBUG] instruction: ', self.instruction)
+        # print('[DEBUG] instruction: ', self.instruction)
         observation, messages = prompt_with_icl(self.instruction, self.raw_icl, cur_task, 5)
         # print('[DEBUG] reset observation: ', observation)
         # print('[DEBUG] reset messages: ', messages)
