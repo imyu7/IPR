@@ -1,0 +1,46 @@
+# WebShop評価用 Llama 7B設定ファイル
+
+# ABCIジョブ設定
+job:
+  name: webshop_llama_7b
+  walltime: "4:00:00"  # より大きなモデルなので時間を延長
+  project: gcb50389
+  queue: rt_HG
+  output_dir: logs/abci
+
+# モデル設定
+model:
+  name: "meta-llama/Llama-2-7b-chat-hf"
+  temperature: 0.7
+  max_new_tokens: 1024
+  top_p: 0.95
+  top_k: 40
+  
+  # HuggingFace固有設定
+  device: "auto"
+  load_in_8bit: false
+  load_in_4bit: true  # 4bit量子化を使用してメモリ節約
+  trust_remote_code: false
+  torch_dtype: "auto"
+
+# エージェント設定
+agent:
+  type: "huggingface"
+  max_steps: 10  # より多くのステップを許可
+  verbose: false  # actionとobservationの詳細ログ出力
+
+# 評価設定
+evaluation:
+  test_task_limit: 50
+  task_start_idx: 0
+  task_end_idx: null
+  results_dir: "results/abci"
+
+# バッチジョブ設定
+batch:
+  job_id: null
+  
+# ログ設定
+logging:
+  level: "INFO"
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s" 

@@ -1,0 +1,47 @@
+# WebShop評価用 Llama 3.2 3B Instruct設定ファイル
+
+# ABCIジョブ設定
+job:
+  name: webshop_llama_3_1_70B
+  walltime: "4:00:00"  # より大きなモデルなので時間を延長
+  project: gcb50389
+  queue: rt_HG
+  output_dir: logs/abci
+
+# モデル設定
+model:
+  name: "meta-llama/Llama-3.1-70B-Instruct"
+  temperature: 0.1
+  max_new_tokens: 512
+  top_p: 0.9
+  top_k: 50
+  
+  # HuggingFace固有設定
+  device: "auto"
+  load_in_8bit: false
+  load_in_4bit: true  # 4bit量子化を使用してメモリ節約
+  trust_remote_code: false
+  torch_dtype: "auto"
+
+# エージェント設定
+agent:
+  type: "huggingface"
+  max_steps: 5  # より多くのステップを許可
+  verbose: false  # actionとobservationの詳細ログ出力
+
+# 評価設定
+evaluation:
+  # タスク範囲: submit_abci_jobs.shのTOTAL_TASKSで制御されるため、
+  # ここでは最大タスク数を指定（バッチジョブで適切に分割される）
+  task_start_idx: 0
+  task_end_idx: 100  # 100タスクまで処理可能（実際の処理数はバッチスクリプトで制御）
+  results_dir: "results/abci"
+
+# バッチジョブ設定
+batch:
+  job_id: null
+  
+# ログ設定
+logging:
+  level: "INFO"
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s" 
